@@ -9,19 +9,16 @@
 #include <string.h>
 
 
-# define TRUE 1
-# define FALSE 0
+# define HEADER 0x55
+# define PACKET_TYPE 0x3153
 
-void parse_data(char *data)
+void parse_data(int16_t *data)
 {
-    int header = 0x55;
-    int packet_type = 0x7A31;
-    if(data[0] == header && data[1] == header) {
-        if(data[2] == packet_type && data[3] == packet_type) {
-            for(int i=4;i<40;i+=2) {
-                printf("%c %c", data[i], data[i+1]);
-            }
-        }
+    if(data[0] == PACKET_TYPE) {
+        printf("%f ", (float)data[1]*20/(2<<15));
+        printf("%f ", (float)data[2]*20/(2<<15));
+        printf("%f ", (float)data[3]*20/(2<<15));
+        printf("%u ", (data[11]));
     }
     return;
 }
@@ -52,15 +49,26 @@ int main(int argc, int **argv) {
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
     }
-    char *ptr;
-    char read_buf[16];
-    
-    char n = 0;
+
+    int16_t *ptr;
+    int16_t read_buf[13];
+    int8_t head;
+
+    int n = 0;
     while(1) {
-        while((n = read(serial_port, &read_buf, sizeof(read_buf))) > 0) {
-            ptr = read_buf;
-            parse_data(&(*ptr));
-            printf("\n");
+        while((n = read(serial_port, &head, sizeof(head))) > 0) {
+            if(head == HEADER) {
+                if(n = read(serial_port, &head, sizeof(head)) > 0) {
+                    if(head == HEADER) {
+                        if(n = read(serial_port, &read_buf, sizeof(read_buf)) > 0) {
+                            ptr = read_buf;
+                            parse_data(&(*ptr));
+                            printf("\n");
+                        }
+                    }
+                    memset(read_buf, 0, sizeof(read_buf));
+                }
+            }
         }
     }
     return 0;
