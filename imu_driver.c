@@ -10,9 +10,10 @@
 
 
 # define HEADER 0x55
-# define PACKET_TYPE 0x3153
+# define PACKET_TYPE_383 0x3153
+# define PACKET_TYPE_330 0x317A
 
-void parse_data(int16_t *data)
+void parse_data_383(int16_t *data)
 {
     printf("%f ", (float)data[0]*20/(2<<15));
     printf("%f ", (float)data[1]*20/(2<<15));
@@ -25,6 +26,18 @@ void parse_data(int16_t *data)
     printf("%f ", (float)data[8]*200/(2<<15));
     printf("%f ", (float)data[9]*200/(2<<15));
     printf("%hu ", (data[10]));
+    return;
+}
+
+void parse_data_330(int32_t *data)
+{
+    printf("%f ", (float)data[1]*20/(2<<15));
+    printf("%f ", (float)data[2]*20/(2<<15));
+    printf("%f ", (float)data[3]*20/(2<<15));
+    printf("%f ", (float)data[4]*1260/(2<<15));
+    printf("%f ", (float)data[5]*1260/(2<<15));
+    printf("%f ", (float)data[6]*1260/(2<<15));
+    printf("%u ", (data[0]));
     return;
 }
 
@@ -55,8 +68,6 @@ int main(int argc, int **argv) {
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
     }
 
-    // int16_t *ptr;
-    // int16_t read_buf[13];
     int8_t head;
     int16_t p_type;
 
@@ -67,17 +78,27 @@ int main(int argc, int **argv) {
                 if(n = read(serial_port, &head, sizeof(head)) > 0) {
                     if(head == HEADER) {
                         if(n = read(serial_port, &p_type, sizeof(p_type)) > 0) {
-                            if(p_type == PACKET_TYPE) {
+                            if(p_type == PACKET_TYPE_383) {
                                 int16_t *ptr;
                                 int16_t buffer[12];
                                 if(n = read(serial_port, &buffer, sizeof(buffer)) > 0) {
                                     ptr = buffer;
-                                    parse_data(&(*ptr));
+                                    parse_data_383(&(*ptr));
+                                    printf("\n");
+                                }
+                                memset(buffer, 0, sizeof(buffer));
+                            } else if(p_type == PACKET_TYPE_330) {
+                                int32_t *ptr;
+                                int32_t buffer[10];
+                                if(n = read(serial_port, &buffer, sizeof(buffer)) > 0) {
+                                    ptr = buffer;
+                                    parse_data_330(&(*ptr));
                                     printf("\n");
                                 }
                                 memset(buffer, 0, sizeof(buffer));
                             }
-                        }
+                        } 
+                        
                     }
                 }
             }
