@@ -14,12 +14,17 @@
 
 void parse_data(int16_t *data)
 {
-    if(data[0] == PACKET_TYPE) {
-        printf("%f ", (float)data[1]*20/(2<<15));
-        printf("%f ", (float)data[2]*20/(2<<15));
-        printf("%f ", (float)data[3]*20/(2<<15));
-        printf("%u ", (data[11]));
-    }
+    printf("%f ", (float)data[0]*20/(2<<15));
+    printf("%f ", (float)data[1]*20/(2<<15));
+    printf("%f ", (float)data[2]*20/(2<<15));
+    printf("%f ", (float)data[3]*1260/(2<<15));
+    printf("%f ", (float)data[4]*1260/(2<<15));
+    printf("%f ", (float)data[5]*1260/(2<<15));
+    printf("%f ", (float)data[6]*200/(2<<15));
+    printf("%f ", (float)data[7]*200/(2<<15));
+    printf("%f ", (float)data[8]*200/(2<<15));
+    printf("%f ", (float)data[9]*200/(2<<15));
+    printf("%hu ", (data[10]));
     return;
 }
 
@@ -50,9 +55,10 @@ int main(int argc, int **argv) {
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
     }
 
-    int16_t *ptr;
-    int16_t read_buf[13];
+    // int16_t *ptr;
+    // int16_t read_buf[13];
     int8_t head;
+    int16_t p_type;
 
     int n = 0;
     while(1) {
@@ -60,13 +66,19 @@ int main(int argc, int **argv) {
             if(head == HEADER) {
                 if(n = read(serial_port, &head, sizeof(head)) > 0) {
                     if(head == HEADER) {
-                        if(n = read(serial_port, &read_buf, sizeof(read_buf)) > 0) {
-                            ptr = read_buf;
-                            parse_data(&(*ptr));
-                            printf("\n");
+                        if(n = read(serial_port, &p_type, sizeof(p_type)) > 0) {
+                            if(p_type == PACKET_TYPE) {
+                                int16_t *ptr;
+                                int16_t buffer[12];
+                                if(n = read(serial_port, &buffer, sizeof(buffer)) > 0) {
+                                    ptr = buffer;
+                                    parse_data(&(*ptr));
+                                    printf("\n");
+                                }
+                                memset(buffer, 0, sizeof(buffer));
+                            }
                         }
                     }
-                    memset(read_buf, 0, sizeof(read_buf));
                 }
             }
         }
