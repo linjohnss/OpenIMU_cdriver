@@ -8,18 +8,9 @@
 #include <errno.h>
 #include <string.h>
 
-
 # define HEADER 0x55
 # define PACKET_TYPE_383 0x3153
 # define PACKET_TYPE_330 0x317A
-
-u_int32_t reverse(u_int32_t x)
-{
-    u_int32_t n = x;
-    n = ((n & 0xffff0000) >> 16) | ((n & 0x0000ffff) << 16);
-    n = ((n & 0xff00ff00) >>  8) | ((n & 0x00ff00ff) <<  8);
-    return n;
-} 
 
 typedef struct imuData *imuDataPointer;
 struct imuData
@@ -39,9 +30,9 @@ void parse_data_383(int16_t *data, imuDataPointer result)
     result->accx = (float)data[0]*20/(1<<16);
     result->accy = (float)data[1]*20/(1<<16);
     result->accz = (float)data[2]*20/(1<<16);
-    result->gyrox = (float)data[3]*1260/(1<<16);
-    result->gyroy = (float)data[4]*1260/(1<<16); 
-    result->gyroz = (float)data[5]*1260/(1<<16);    
+    result->gyrox = (float)(data[3])*20/(1<<16);
+    result->gyroy = (float)(data[4])*20/(1<<16); 
+    result->gyroz = (float)(data[5])*20/(1<<16);    
     printf("%f ", result->accx);
     printf("%f ", result->accy);
     printf("%f ", result->accz);
@@ -49,6 +40,10 @@ void parse_data_383(int16_t *data, imuDataPointer result)
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
     printf("%hu ", result->time.t_383);
+    
+    // printf("%X ", data[3]);
+    // printf("%X ", data[4]);
+    // printf("%X ", data[5]);
     return;
 }
 
@@ -60,14 +55,14 @@ void parse_data_330(int32_t *data, imuDataPointer result)
     result->accz = *((float*)((void*)(&data[3])));
     result->gyrox = *((float*)((void*)(&data[4])));
     result->gyroy = *((float*)((void*)(&data[5]))); 
-    result->gyroz = *((float*)((void*)(&data[6])));    
+    result->gyroz = *((float*)((void*)(&data[6]))); 
     printf("%f ", result->accx);
     printf("%f ", result->accy);
     printf("%f ", result->accz);
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
-    printf("%u ", result->time.t_330);
+    printf("%hu ", result->time.t_330);   
     return;
 }
 
@@ -103,13 +98,14 @@ int main(int argc, int **argv) {
     int8_t length = 0;
     imuDataPointer result;
     result = (imuDataPointer)malloc(sizeof(imuDataPointer*));
-    
+    int8_t data[40];
     int n = 0;
     while(1) {
         while((n = read(serial_port, &head, sizeof(head))) > 0) {
             if(head == HEADER) {
                 if(n = read(serial_port, &head, sizeof(head)) > 0) {
                     if(head == HEADER) {
+                        //puts("get header");
                         if(n = read(serial_port, &p_type, sizeof(p_type)) > 0) {
                             if(p_type == PACKET_TYPE_383) {
                                 int16_t *ptr;
@@ -130,12 +126,16 @@ int main(int argc, int **argv) {
                                     memset(result, 0, sizeof(result));
                                 }
                             }
-                        } 
-                        
+                        }            
                     }
                 }
             }
         }
+        // while((n = read(serial_port, &data, sizeof(data))) > 0) {
+        //     for(int i=0;i<40;i++)
+        //         printf("%hX ", data[i]);
+        //     printf("\n");
+        // }
     }
     free(result);
     return 0;
