@@ -12,6 +12,8 @@
 # define PACKET_TYPE_383 0x3153
 # define PACKET_TYPE_330 0x317A
 
+static u_int64_t time_count = 0;
+
 int16_t
 reverse(int16_t x)
 {
@@ -23,6 +25,7 @@ typedef struct imuData *imuDataPointer;
 struct imuData
 {
     union time { float t_383; u_int32_t t_330; } time;
+    u_int32_t count;
     float accx;
     float accy;
     float accz;
@@ -36,11 +39,14 @@ float hint_to_float(u_int16_t input)
     float exp = 0.0;
     float frac = 0.0;
 
-} 
+}
 
 void parse_data_383(int16_t *data, imuDataPointer result)
 {
     result->time.t_383 = (float)(u_int16_t)reverse(data[10])*15.259022;
+    if(result->time.t_383 == 0 || result->time.t_383 == 1000000)
+        time_count++;
+    result->count = time_count;
     result->accx = (float)reverse(data[0])*20/(1<<16);
     result->accy = (float)reverse(data[1])*20/(1<<16);
     result->accz = (float)reverse(data[2])*20/(1<<16);
@@ -53,6 +59,7 @@ void parse_data_383(int16_t *data, imuDataPointer result)
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
+    printf("%u ", result->count);
     printf("%f ", result->time.t_383);
     return;
 }
@@ -108,7 +115,6 @@ int main(int argc, int **argv) {
     int8_t length = 0;
     imuDataPointer result;
     result = (imuDataPointer)malloc(sizeof(imuDataPointer*));
-    int8_t data[31];
     int n = 0;
     while(1) {
         while((n = read(serial_port, &head, sizeof(head))) > 0) {
