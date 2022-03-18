@@ -8,5 +8,11 @@ all:$(obj_imu) $(obj_rtk)
 	$(CC) -o $(imu) $(obj_imu) 
 	$(CC) -o $(rtk) $(obj_rtk)
 
+imu:$(obj_imu)
+	$(CC) -o $(imu) $(obj_imu) 
+
+rtk:$(obj_rtk)
+	$(CC) -o $(rtk) $(obj_rtk)
+
 clean:
 	rm -rf $(obj_imu) $(imu) $(obj_rtk) $(rtk)
