@@ -34,13 +34,6 @@ struct imuData
     float gyroz;
 };
 
-float hint_to_float(u_int16_t input)
-{
-    float exp = 0.0;
-    float frac = 0.0;
-
-}
-
 void parse_data_383(int16_t *data, imuDataPointer result)
 {
     result->time.t_383 = (float)(u_int16_t)reverse(data[10])*15.259022;
@@ -84,7 +77,7 @@ void parse_data_330(int32_t *data, imuDataPointer result)
 }
 
 int main(int argc, int **argv) {
-    int serial_port = open("/dev/ttyUSB1", O_RDWR);
+    int serial_port = open("/dev/ttyUSB0", O_RDWR);
 
     if (serial_port <0) {
         printf("Error %i from open: %s\n", errno, strerror(errno));
