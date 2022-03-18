@@ -21,7 +21,7 @@ make
 ```
 Also can compile respectively
 ```shell
-make imu //for imu 330 & 383
+make imu //for imu 330, 383
 ```
 ```shell
 make rtk //for rtk
