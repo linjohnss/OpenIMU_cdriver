@@ -27,7 +27,7 @@ make imu //for imu 330 & 383
 make rtk //for rtk
 ```
 ### Run
-imu 330 & 383
+imu 330, 383
 ```shell
 ./imu_driver
 ```
