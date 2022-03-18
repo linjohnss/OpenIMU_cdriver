@@ -1,12 +1,12 @@
 # ifndef DRIVER_H
 # define DRIVER_H
-
-# define HEADER 0x55
-# define PACKET_TYPE_RTK 0x3173
-# define PACKET_TYPE_383 0x3153
-# define PACKET_TYPE_330 0x317A
+#include <stdbool.h>
 
 static u_int64_t time_count = 0;
+static int serial_port;
+static int8_t head;
+static int16_t p_type;
+static int8_t length = 0;
 
 typedef struct imuData *imuDataPointer;
 struct imuData
@@ -109,8 +109,89 @@ void parse_data_rtk(int16_t *data, rtkDataPointer result)
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
+    printf("\n");
 
     return;
+}
+
+int16_t* launch_driver_16(int8_t header, int16_t packet_type)
+{
+    if((read(serial_port, &head, sizeof(head))) > 0) {
+        if(head == header) {
+            if(read(serial_port, &head, sizeof(head)) > 0) {
+                if(head == header) {
+                    if(read(serial_port, &p_type, sizeof(p_type)) > 0) {
+                        if(p_type == packet_type) {
+                            if(read(serial_port, &length, sizeof(length)) > 0) {
+                                int16_t *buffer= (int16_t*)malloc((length/2) * sizeof(int16_t));
+                                if(read(serial_port, &(*buffer), (length/2) * sizeof(int16_t)) > 0) {
+                                   return buffer; 
+                                }
+                            }
+                     } 
+                    }          
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+int32_t* launch_driver_32(int8_t header, int16_t packet_type)
+{
+    if((read(serial_port, &head, sizeof(head))) > 0) {
+        if(head == header) {
+            if(read(serial_port, &head, sizeof(head)) > 0) {
+                if(head == header) {
+                    if(read(serial_port, &p_type, sizeof(p_type)) > 0) {
+                        if(p_type == packet_type) {
+                            if(read(serial_port, &length, sizeof(length)) > 0) {
+                                int32_t *buffer= (int32_t*)malloc((length/4) * sizeof(int32_t));
+                                if(read(serial_port, &(*buffer), (length/4) * sizeof(int32_t)) > 0) {
+                                   return buffer; 
+                                }
+                            }
+                     } 
+                    }          
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+void serial_port_bringup(int device_type)
+{
+    serial_port = open("/dev/ttyUSB0", O_RDWR);
+
+    if (serial_port <0) {
+        printf("Error %i from open: %s\n", errno, strerror(errno));
+    }
+
+    struct termios tty;
+    if(tcgetattr(serial_port, &tty) != 0) {
+        printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+    }
+    tty.c_cflag &= ~PARENB;
+    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~CSIZE;
+    tty.c_cflag |= CS8;
+    tty.c_cflag &= ~CRTSCTS;
+    tty.c_lflag &= ~ICANON;
+    tty.c_lflag &= ~ISIG;
+    tty.c_oflag &= ~ONLCR;
+    tty.c_cc[VTIME] = 10;
+    tty.c_cc[VMIN] = 0;
+    speed_t sp = B115200;
+    if(device_type == 0)    // IMU
+        sp = B115200;
+    else if (device_type == 1)  //RTK
+        sp = B460800;
+    cfsetispeed(&tty, sp);
+    cfsetospeed(&tty, sp);
+    if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
+        printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+    }
 }
 
 #endif /* DRIVER_H */

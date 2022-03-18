@@ -6,33 +6,12 @@
 #include <errno.h>
 #include <string.h>
 #include "driver.h"
+# define HEADER 0x55
+# define PACKET_TYPE_383 0x3153
+# define PACKET_TYPE_330 0x317A
 
 int main(int argc, int **argv) {
-    int serial_port = open("/dev/ttyUSB0", O_RDWR);
-
-    if (serial_port <0) {
-        printf("Error %i from open: %s\n", errno, strerror(errno));
-    }
-
-    struct termios tty;
-    if(tcgetattr(serial_port, &tty) != 0) {
-        printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
-    }
-    tty.c_cflag &= ~PARENB;
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CSIZE;
-    tty.c_cflag |= CS8;
-    tty.c_cflag &= ~CRTSCTS;
-    tty.c_lflag &= ~ICANON;
-    tty.c_lflag &= ~ISIG;
-    tty.c_oflag &= ~ONLCR;
-    tty.c_cc[VTIME] = 10;
-    tty.c_cc[VMIN] = 0;
-    cfsetispeed(&tty, B115200);
-    cfsetospeed(&tty, B115200);
-    if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
-        printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
-    }
+    serial_port_bringup(0);
 
     int8_t head;
     int16_t p_type;
