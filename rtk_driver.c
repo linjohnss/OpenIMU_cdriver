@@ -6,8 +6,6 @@
 #include <errno.h>
 #include <string.h>
 #include "driver.h"
-# define HEADER 0x55
-# define PACKET_TYPE_RTK 0x3173
 
 int main(int argc, int **argv) {
     serial_port_bringup(1);
@@ -16,7 +14,7 @@ int main(int argc, int **argv) {
     result = (rtkDataPointer)malloc(sizeof(rtkDataPointer*));
 
     while(1) {
-        int16_t *data = launch_driver_16(HEADER, PACKET_TYPE_RTK);
+        int16_t *data = launch_driver_16_type(HEADER, PACKET_TYPE_RTK);
         if(data)
             parse_data_rtk(&(*data), &(*result));
         memset(result, 0, sizeof(result));

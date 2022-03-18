@@ -2,6 +2,11 @@
 # define DRIVER_H
 #include <stdbool.h>
 
+# define HEADER 0x55
+# define PACKET_TYPE_383 0x3153
+# define PACKET_TYPE_330 0x317A
+# define PACKET_TYPE_RTK 0x3173
+
 static u_int64_t time_count = 0;
 static int serial_port;
 static int8_t head;
@@ -65,25 +70,37 @@ void parse_data_383(int16_t *data, imuDataPointer result)
     printf("%f ", result->gyroz);
     printf("%u ", result->count);
     printf("%f ", result->time.t_383);
+    printf("\n");
     return;
 }
 
-void parse_data_330(int32_t *data, imuDataPointer result)
+void parse_data_330(int16_t *data, imuDataPointer result)
 {
-    result->time.t_330 = data[0];
-    result->accx = *((float*)((void*)(&data[1])));
-    result->accy = *((float*)((void*)(&data[2])));
-    result->accz = *((float*)((void*)(&data[3])));
-    result->gyrox = *((float*)((void*)(&data[4])));
-    result->gyroy = *((float*)((void*)(&data[5]))); 
-    result->gyroz = *((float*)((void*)(&data[6]))); 
+    int32_t temp;
+    temp = concat(data[1], data[0]);
+    result->time.t_330 = temp;
+    temp = concat(data[3], data[2]);
+    result->accx = *((float*)((void*)(&temp)));
+    temp = concat(data[5], data[4]);
+    result->accy = *((float*)((void*)(&temp)));
+    temp = concat(data[7], data[6]);
+    result->accz = *((float*)((void*)(&temp)));
+    temp = concat(data[9], data[8]);
+    result->gyrox = *((float*)((void*)(&temp)));
+    temp = concat(data[11], data[10]);
+    result->gyroy = *((float*)((void*)(&temp))); 
+    temp = concat(data[13], data[12]);
+    result->gyroz = *((float*)((void*)(&temp))); 
+    
     printf("%f ", result->accx);
     printf("%f ", result->accy);
     printf("%f ", result->accz);
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
-    printf("%hu ", result->time.t_330);   
+    printf("%hu ", result->time.t_330);
+    printf("\n");
+
     return;
 }
 
@@ -114,7 +131,28 @@ void parse_data_rtk(int16_t *data, rtkDataPointer result)
     return;
 }
 
-int16_t* launch_driver_16(int8_t header, int16_t packet_type)
+int16_t* launch_driver_16(int8_t header)
+{
+    if((read(serial_port, &head, sizeof(head))) > 0) {
+        if(head == header) {
+            if(read(serial_port, &head, sizeof(head)) > 0) {
+                if(head == header) {
+                    if(read(serial_port, &p_type, sizeof(p_type)) > 0) {
+                        if(read(serial_port, &length, sizeof(length)) > 0) {
+                            int16_t *buffer= (int16_t*)malloc((length/2) * sizeof(int16_t));
+                            if(read(serial_port, &(*buffer), (length/2) * sizeof(int16_t)) > 0) {
+                                return buffer; 
+                            }
+                        }
+                    }          
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+int16_t* launch_driver_16_type(int8_t header, int16_t packet_type)
 {
     if((read(serial_port, &head, sizeof(head))) > 0) {
         if(head == header) {
@@ -128,7 +166,7 @@ int16_t* launch_driver_16(int8_t header, int16_t packet_type)
                                    return buffer; 
                                 }
                             }
-                     } 
+                        } 
                     }          
                 }
             }
