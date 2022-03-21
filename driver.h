@@ -200,8 +200,11 @@ int32_t* launch_driver_32(int8_t header, int16_t packet_type)
 
 void serial_port_bringup(int device_type)
 {
-    serial_port = open("/dev/ttyUSB0", O_RDWR);
-
+    char *portname[4] = {"/dev/ttyUSB0", "/dev/ttyUSB1",
+                             "/dev/ttyUSB2", "/dev/ttyUSB3"};
+    for(int i = 0; (serial_port = open(portname[i], O_RDWR)) < 0; i ++);
+    
+    printf("%d\n", serial_port);
     if (serial_port <0) {
         printf("Error %i from open: %s\n", errno, strerror(errno));
     }
