@@ -45,11 +45,6 @@ int16_t reverse(int16_t x)
     return x;
 }
 
-int32_t concat(int16_t a, int16_t b)
-{
-    return a << 16 | (b & 0x0000ffff);
-}
-
 int16_t concat_16(int8_t a, int8_t b)
 {
     return a << 8 | (b & 0x00ff);
@@ -82,16 +77,16 @@ u_int16_t CalculateCRC (u_int8_t *buf, u_int16_t  length)
 
 void parse_data_383(int16_t *data, imuDataPointer result)
 {
-    result->time.t_383 = (float)(u_int16_t)reverse(data[10])*15.259022;
+    result->time.t_383 = (float)(u_int16_t)reverse(concat_16(data[20], data[21]))*15.259022;
     if(result->time.t_383 == 0 || result->time.t_383 == 1000000)
         time_count++;
     result->count = time_count;
-    result->accx = (float)reverse(data[0])*20/(1<<16);
-    result->accy = (float)reverse(data[1])*20/(1<<16);
-    result->accz = (float)reverse(data[2])*20/(1<<16);
-    result->gyrox = (float)reverse(data[3])*1260/(1<<16);
-    result->gyroy = (float)reverse(data[4])*1260/(1<<16); 
-    result->gyroz = (float)reverse(data[5])*1260/(1<<16);    
+    result->accx = (float)reverse(concat_16(data[1], data[0]))*20/(1<<16);
+    result->accy = (float)reverse(concat_16(data[3], data[2]))*20/(1<<16);
+    result->accz = (float)reverse(concat_16(data[5], data[4]))*20/(1<<16);
+    result->gyrox = (float)reverse(concat_16(data[7], data[6]))*1260/(1<<16);
+    result->gyroy = (float)reverse(concat_16(data[9], data[8]))*1260/(1<<16); 
+    result->gyroz = (float)reverse(concat_16(data[11], data[10]))*1260/(1<<16);    
     printf("%f ", result->accx);
     printf("%f ", result->accy);
     printf("%f ", result->accz);
@@ -104,22 +99,22 @@ void parse_data_383(int16_t *data, imuDataPointer result)
     return;
 }
 
-void parse_data_330(int16_t *data, imuDataPointer result)
+void parse_data_330(int8_t *data, imuDataPointer result)
 {
     int32_t temp;
-    temp = concat(data[1], data[0]);
+    temp = concat_32(data[3], data[2], data[1], data[0]);
     result->time.t_330 = temp;
-    temp = concat(data[3], data[2]);
+    temp = concat_32(data[7], data[6], data[5], data[4]);
     result->accx = *((float*)((void*)(&temp)));
-    temp = concat(data[5], data[4]);
+    temp = concat_32(data[11], data[10], data[9], data[8]);
     result->accy = *((float*)((void*)(&temp)));
-    temp = concat(data[7], data[6]);
+    temp = concat_32(data[15], data[14], data[13], data[12]);
     result->accz = *((float*)((void*)(&temp)));
-    temp = concat(data[9], data[8]);
+    temp = concat_32(data[19], data[18], data[17], data[16]);
     result->gyrox = *((float*)((void*)(&temp)));
-    temp = concat(data[11], data[10]);
+    temp = concat_32(data[23], data[22], data[21], data[20]);
     result->gyroy = *((float*)((void*)(&temp))); 
-    temp = concat(data[13], data[12]);
+    temp = concat_32(data[27], data[26], data[25], data[24]);
     result->gyroz = *((float*)((void*)(&temp))); 
     
     printf("%f ", result->accx);
