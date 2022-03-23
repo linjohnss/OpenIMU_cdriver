@@ -45,9 +45,39 @@ int16_t reverse(int16_t x)
     return x;
 }
 
-int32_t concat(int16_t x, int16_t y)
+int32_t concat(int16_t a, int16_t b)
 {
-    return x << 16 | (y & 0x0000ffff);
+    return a << 16 | (b & 0x0000ffff);
+}
+
+int16_t concat_16(int8_t a, int8_t b)
+{
+    return a << 8 | (b & 0x00ff);
+}
+
+int32_t concat_32(int8_t a, int8_t b, int8_t c, int8_t d)
+{
+    
+    return concat_16(a, b) << 16 | (concat_16(c, d) & 0x0000ffff);
+}
+
+u_int16_t CalculateCRC (u_int8_t *buf, u_int16_t  length)
+{
+   u_int16_t crc = 0x1D0F;
+
+   for (int i=0; i < length; i++) {
+       crc ^= buf[i] << 8;
+       for (int j=0; j<8; j++) {
+           if (crc & 0x8000) {
+               crc = (crc << 1) ^ 0x1021;
+           }
+           else {
+               crc = crc << 1;
+           }
+       }
+   }
+
+   return ((crc << 8 ) & 0xFF00) | ((crc >> 8) & 0xFF);
 }
 
 void parse_data_383(int16_t *data, imuDataPointer result)
@@ -104,21 +134,26 @@ void parse_data_330(int16_t *data, imuDataPointer result)
     return;
 }
 
-void parse_data_rtk(int16_t *data, rtkDataPointer result)
+void parse_data_rtk(int8_t *data, rtkDataPointer result)
 {
-    int32_t temp;
-    temp = concat(data[4], data[3]);
-    result->accx = *((float*)((void*)(&temp)));
-    temp = concat(data[6], data[5]);
-    result->accy = *((float*)((void*)(&temp)));
-    temp = concat(data[8], data[7]);
-    result->accz = *((float*)((void*)(&temp)));
-    temp = concat(data[10], data[9]);
-    result->gyrox = *((float*)((void*)(&temp)));
-    temp = concat(data[12], data[11]);
-    result->gyroy = *((float*)((void*)(&temp))); 
-    temp = concat(data[14], data[13]);
-    result->gyroz = *((float*)((void*)(&temp))); 
+    int16_t temp1;
+    int32_t temp2;
+    temp1 = concat_16(data[1], data[0]);
+    result->GPS_Week = temp1;
+    temp2 = concat_32(data[5], data[4], data[3], data[2]);
+    result->GPS_TimeOfWeek = temp2;
+    temp2 = concat_32(data[9], data[8], data[7], data[6]);
+    result->accx = *((float*)((void*)(&temp2)));
+    temp2 = concat_32(data[13], data[12], data[11], data[10]);
+    result->accy = *((float*)((void*)(&temp2)));
+    temp2 = concat_32(data[17], data[16], data[15], data[14]);
+    result->accz = *((float*)((void*)(&temp2)));
+    temp2 = concat_32(data[21], data[20], data[19], data[18]);
+    result->gyrox = *((float*)((void*)(&temp2)));
+    temp2 = concat_32(data[25], data[24], data[23], data[22]);
+    result->gyroy = *((float*)((void*)(&temp2))); 
+    temp2 = concat_32(data[29], data[28], data[27], data[26]);
+    result->gyroz = *((float*)((void*)(&temp2))); 
     
     printf("%f ", result->accx);
     printf("%f ", result->accy);
@@ -127,7 +162,6 @@ void parse_data_rtk(int16_t *data, rtkDataPointer result)
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
     printf("\n");
-
     return;
 }
 
@@ -175,7 +209,7 @@ int16_t* launch_driver_16_type(int8_t header, int16_t packet_type)
     return NULL;
 }
 
-int32_t* launch_driver_32(int8_t header, int16_t packet_type)
+int8_t* launch_driver_8(int8_t header, int16_t packet_type)
 {
     if((read(serial_port, &head, sizeof(head))) > 0) {
         if(head == header) {
@@ -184,12 +218,20 @@ int32_t* launch_driver_32(int8_t header, int16_t packet_type)
                     if(read(serial_port, &p_type, sizeof(p_type)) > 0) {
                         if(p_type == packet_type) {
                             if(read(serial_port, &length, sizeof(length)) > 0) {
-                                int32_t *buffer= (int32_t*)malloc((length/4) * sizeof(int32_t));
-                                if(read(serial_port, &(*buffer), (length/4) * sizeof(int32_t)) > 0) {
-                                   return buffer; 
+                                int8_t *data= (int8_t*)malloc((length+2)* sizeof(int8_t));
+                                if(read(serial_port, &(*data), (length+2) * sizeof(int8_t)) > 0) {
+                                    int8_t *buffer = (int8_t*)malloc((length+3) * sizeof(int8_t));
+                                    buffer[0] = p_type & 0x00FF;
+                                    buffer[1] = p_type>>8;
+                                    buffer[2] = length;
+                                    for(int i=0; i<length; i++) {
+                                        buffer[i+3] = data[i];
+                                    }
+                                    if(CalculateCRC(buffer, length + 3) == concat_16(data[length+1], data[length]))
+                                        return data; 
                                 }
                             }
-                     } 
+                        }
                     }          
                 }
             }

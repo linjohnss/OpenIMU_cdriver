@@ -14,7 +14,7 @@ int main(int argc, int **argv) {
     result = (rtkDataPointer)malloc(sizeof(rtkDataPointer*));
 
     while(1) {
-        int16_t *data = launch_driver_16_type(HEADER, PACKET_TYPE_RTK);
+        int8_t*data = launch_driver_8(HEADER, PACKET_TYPE_RTK);
         if(data)
             parse_data_rtk(&(*data), &(*result));
         memset(result, 0, sizeof(result));
