@@ -30,7 +30,7 @@ typedef struct rtkData *rtkDataPointer;
 struct rtkData
 {
     u_int16_t GPS_Week;
-    u_int32_t GPS_TimeOfWeek;
+    float GPS_TimeOfWeek;
     float accx;
     float accy;
     float accz;
@@ -123,7 +123,7 @@ void parse_data_330(int8_t *data, imuDataPointer result)
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
-    printf("%hu ", result->time.t_330);
+    printf("%u ", result->time.t_330);
     printf("\n");
 
     return;
@@ -136,7 +136,7 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     temp1 = concat_16(data[1], data[0]);
     result->GPS_Week = temp1;
     temp2 = concat_32(data[5], data[4], data[3], data[2]);
-    result->GPS_TimeOfWeek = temp2;
+    result->GPS_TimeOfWeek = (float)temp2/1000;
     temp2 = concat_32(data[9], data[8], data[7], data[6]);
     result->accx = *((float*)((void*)(&temp2)));
     temp2 = concat_32(data[13], data[12], data[11], data[10]);
@@ -156,6 +156,8 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     printf("%f ", result->gyrox);
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
+    printf("%d ", result->GPS_Week);
+    printf("%f ", result->GPS_TimeOfWeek);
     printf("\n");
     return;
 }
@@ -222,7 +224,7 @@ int8_t* launch_driver_8(int8_t header, int16_t packet_type)
                                     for(int i=0; i<length; i++) {
                                         buffer[i+3] = data[i];
                                     }
-                                    if(CalculateCRC(buffer, length + 3) == concat_16(data[length+1], data[length]))
+                                    if(CalculateCRC(buffer, length + 3) == (u_int16_t)concat_16(data[length+1], data[length]))
                                         return data; 
                                 }
                             }
@@ -254,17 +256,17 @@ void serial_port_bringup(int device_type)
     tty.c_cflag &= ~CSTOPB;
     tty.c_cflag &= ~CSIZE;
     tty.c_cflag |= CS8;
-    tty.c_cflag &= ~CRTSCTS;
-    tty.c_lflag &= ~ICANON;
-    tty.c_lflag &= ~ISIG;
-    tty.c_oflag &= ~ONLCR;
-    tty.c_cc[VTIME] = 10;
+    // tty.c_cflag &= ~CRTSCTS;
+    tty.c_lflag &= ICANON;
+    // tty.c_lflag &= ~ISIG;
+    // tty.c_oflag &= ~ONLCR;
+    tty.c_cc[VTIME] = 0;
     tty.c_cc[VMIN] = 0;
     speed_t sp = B115200;
     if(device_type == 0)    // IMU
         sp = B115200;
     else if (device_type == 1)  //RTK
-        sp = B460800;
+        sp = B115200;
     cfsetispeed(&tty, sp);
     cfsetospeed(&tty, sp);
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
