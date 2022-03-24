@@ -266,7 +266,7 @@ void serial_port_bringup(int device_type)
     if(device_type == 0)    // IMU
         sp = B115200;
     else if (device_type == 1)  //RTK
-        sp = B115200;
+        sp = B460800;
     cfsetispeed(&tty, sp);
     cfsetospeed(&tty, sp);
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
