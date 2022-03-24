@@ -6,13 +6,15 @@ OpenIMU, OpenRTK driver by C.
 * [OpenIMU 330BI](https://buildmedia.readthedocs.org/media/pdf/openimu/latest/openimu.pdf)
 * OpenRTK 330LI
 ## Get Start
+### Environment
+`Ubuntu 20.04`
 ### Get OpenIMU_cdriver
 ```shell
 git clone https://github.com/linjohnss/OpenIMU_cdriver.git
 ```
 ### Level up permissions
 ```shell
-sudo chmod 777 /dev/ttyUSB0
+sudo chmod 777 /dev/ttyUSB*
 ```
 
 ### Compile
