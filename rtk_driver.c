@@ -6,7 +6,7 @@ int main(int argc, int **argv)
 
     rtkDataPointer result;
     result = (rtkDataPointer) malloc(sizeof(rtkDataPointer *));
-
+    printf("x_acc,y_acc,z_acc,x_gyro,y_gyro,z_gyro,gps_week,gps_timeofweek\n");
     while (1) {
         int8_t *data = launch_driver_8(HEADER, PACKET_TYPE_RTK);
         if (data) {

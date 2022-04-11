@@ -163,14 +163,14 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     temp2 = concat_32(data[29], data[28], data[27], data[26]);
     result->gyroz = *((float *) ((void *) (&temp2)));
 
-    printf("%f ", result->accx);
-    printf("%f ", result->accy);
-    printf("%f ", result->accz);
-    printf("%f ", result->gyrox);
-    printf("%f ", result->gyroy);
-    printf("%f ", result->gyroz);
-    printf("%d ", result->GPS_Week);
-    printf("%f ", result->GPS_TimeOfWeek);
+    printf("%f,", result->accx);
+    printf("%f,", result->accy);
+    printf("%f,", result->accz);
+    printf("%f,", result->gyrox);
+    printf("%f,", result->gyroy);
+    printf("%f,", result->gyroz);
+    printf("%d,", result->GPS_Week);
+    printf("%f", result->GPS_TimeOfWeek);
     printf("\n");
     return;
 }
