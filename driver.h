@@ -38,7 +38,7 @@ struct imuData {
 typedef struct rtkData *rtkDataPointer;
 struct rtkData {
     uint16_t GPS_Week;
-    float GPS_TimeOfWeek;
+    uint32_t GPS_TimeOfWeek;
     float accx;
     float accy;
     float accz;
@@ -149,7 +149,7 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     temp1 = concat_16(data[1], data[0]);
     result->GPS_Week = temp1;
     temp2 = concat_32(data[5], data[4], data[3], data[2]);
-    result->GPS_TimeOfWeek = (float) temp2 / 1000;
+    result->GPS_TimeOfWeek = temp2;
     temp2 = concat_32(data[9], data[8], data[7], data[6]);
     result->accx = *((float *) ((void *) (&temp2)));
     temp2 = concat_32(data[13], data[12], data[11], data[10]);
@@ -170,7 +170,7 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     printf("%f,", result->gyroy);
     printf("%f,", result->gyroz);
     printf("%d,", result->GPS_Week);
-    printf("%f", result->GPS_TimeOfWeek);
+    printf("%.3f", result->GPS_TimeOfWeek/1000.0);
     printf("\n");
     return;
 }
