@@ -29,13 +29,17 @@ make imu //for imu 330, 383
 make rtk //for rtk
 ```
 ### Run
-imu 330, 383
+imu 330
 ```shell
-./imu_driver
+./imu330_driver
+```
+imu 383
+```shell
+./imu383_driver
 ```
 rtk 330
 ```shell
-./rtk_driver
+./rtk330_driver
 ```
 IMU .csv to ROS .bag
 ```shell
