@@ -16,7 +16,6 @@
 #define PI 3.1415926
 
 static uint64_t time_count = 0;
-static int serial_port;
 static int8_t head;
 static int16_t p_type;
 static int8_t length = 0;
@@ -176,7 +175,7 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     return;
 }
 
-int8_t *launch_driver_8(int8_t header, int8_t packet_type)
+int8_t *launch_driver_8(int serial_port, int8_t header, int8_t packet_type)
 {
     int8_t *buffer = (int8_t *) malloc((50) * sizeof(int8_t));
     if ((read(serial_port, &buffer[0], sizeof(int8_t))) > 0) {
@@ -216,13 +215,14 @@ int8_t *launch_driver_8(int8_t header, int8_t packet_type)
     return NULL;
 }
 
-void serial_port_bringup(int device_type)
+int serial_port_bringup(int device_type, char *portname)
 {
-    char *portname[4] = {"/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2",
-                         "/dev/ttyUSB3"};
-    for (int i = 0; (serial_port = open(portname[i], O_RDONLY)) < 0; i++)
-        ;
-
+    // char *portname[4] = {"/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2",
+    //                      "/dev/ttyUSB3"};
+    // for (int i = 0; (serial_port = open(portname[i], O_RDONLY)) < 0; i++)
+    //     ;
+    
+    int serial_port = open(portname, O_RDONLY);
     if (serial_port < 0) {
         printf("Error %i from open: %s\n", errno, strerror(errno));
     }
@@ -275,6 +275,8 @@ void serial_port_bringup(int device_type)
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
     }
+
+    return serial_port;
 }
 
 #endif /* DRIVER_H */
