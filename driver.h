@@ -10,9 +10,10 @@
 #include <unistd.h>
 
 #define HEADER 0x55
-#define PACKET_TYPE_383 0x3153
-#define PACKET_TYPE_330 0x317A
-#define PACKET_TYPE_RTK 0x3173
+#define PACKET_TYPE_383 0x53    // s1:5331
+#define PACKET_TYPE_330 0x7A    // z1:7A31
+#define PACKET_TYPE_RTK 0x73    // s1:7331
+#define PI 3.1415926
 
 static uint64_t time_count = 0;
 static int serial_port;
@@ -81,33 +82,33 @@ uint16_t CalculateCRC(uint8_t *buf, uint16_t length)
     return ((crc << 8) & 0xFF00) | ((crc >> 8) & 0xFF);
 }
 
-void parse_data_383(int16_t *data, imuDataPointer result)
+void parse_data_383(int8_t *data, imuDataPointer result)
 {
     result->time.t_383 =
-        (float) (uint16_t) reverse(concat_16(data[20], data[21])) * 15.259022;
+        (float) (uint16_t) (concat_16(data[20], data[21])) * 15.259022;
     if (result->time.t_383 == 0 || result->time.t_383 == 1000000)
         time_count++;
     result->count = time_count;
     result->accx =
-        (float) reverse(concat_16(data[1], data[0])) * 20 / (1 << 16);
+        (float) (concat_16(data[0], data[1])) * 20 / (1 << 16);
     result->accy =
-        (float) reverse(concat_16(data[3], data[2])) * 20 / (1 << 16);
+        (float) (concat_16(data[2], data[3])) * 20 / (1 << 16);
     result->accz =
-        (float) reverse(concat_16(data[5], data[4])) * 20 / (1 << 16);
+        (float) (concat_16(data[4], data[5])) * 20 / (1 << 16);
     result->gyrox =
-        (float) reverse(concat_16(data[7], data[6])) * 1260 / (1 << 16);
+        (float) (concat_16(data[6], data[7])) * 7 * PI / (1 << 16);
     result->gyroy =
-        (float) reverse(concat_16(data[9], data[8])) * 1260 / (1 << 16);
+        (float) (concat_16(data[8], data[9])) * 7 * PI / (1 << 16);
     result->gyroz =
-        (float) reverse(concat_16(data[11], data[10])) * 1260 / (1 << 16);
-    printf("%f ", result->accx);
+        (float) (concat_16(data[10], data[11])) * 7 * PI / (1 << 16);
+    printf("%f ", result->accx);    // unit (g)
     printf("%f ", result->accy);
     printf("%f ", result->accz);
-    printf("%f ", result->gyrox);
+    printf("%f ", result->gyrox);   // unit (rad/s)
     printf("%f ", result->gyroy);
     printf("%f ", result->gyroz);
     printf("%u ", result->count);
-    printf("%f ", result->time.t_383);
+    printf("%f ", result->time.t_383);  // unit (uS)
     printf("\n");
     return;
 }
@@ -175,7 +176,7 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     return;
 }
 
-int8_t *launch_driver_8(int8_t header, int16_t packet_type)
+int8_t *launch_driver_8(int8_t header, int8_t packet_type)
 {
     int8_t *buffer = (int8_t *) malloc((50) * sizeof(int8_t));
     if ((read(serial_port, &buffer[0], sizeof(int8_t))) > 0) {
@@ -183,7 +184,7 @@ int8_t *launch_driver_8(int8_t header, int16_t packet_type)
             if (read(serial_port, &buffer[0], sizeof(int8_t)) > 0) {
                 if (buffer[0] == header) {
                     if (read(serial_port, &buffer[0], sizeof(int8_t)) > 0) {
-                        if (buffer[0] == 0x73) {
+                        if (buffer[0] == packet_type) {
                             if (read(serial_port, &buffer[1], sizeof(int8_t)) >
                                 0) {
                                 if (buffer[1] == 0x31) {
@@ -202,7 +203,7 @@ int8_t *launch_driver_8(int8_t header, int16_t packet_type)
                                             (uint16_t) concat_16(
                                                 buffer[buffer[2] + 4],
                                                 buffer[buffer[2] + 3]))
-                                            return &buffer[3];
+                                            return buffer;
                                     }
                                 }
                             }
@@ -231,16 +232,6 @@ void serial_port_bringup(int device_type)
     if (tcgetattr(serial_port, &tty) != 0) {
         printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
     }
-    // tty.c_cflag &= ~PARENB;
-    // tty.c_cflag &= ~CSTOPB;
-    // tty.c_cflag &= ~CSIZE;
-    // tty.c_cflag |= CS8;
-    // tty.c_cflag &= ~CRTSCTS;
-    // tty.c_lflag &= ICANON;
-    // tty.c_lflag &= ~ISIG;
-    // tty.c_oflag &= ~ONLCR;
-    // tty.c_cc[VTIME] = 0;
-    // tty.c_cc[VMIN] = 0;
 
     tty.c_cflag &= ~PARENB;  // Clear parity bit, disabling parity (most common)
     tty.c_cflag &= ~CSTOPB;  // Clear stop field, only one stop bit used in
