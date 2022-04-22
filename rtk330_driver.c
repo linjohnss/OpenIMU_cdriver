@@ -13,9 +13,9 @@ int main(int argc, int **argv)
         data = launch_driver_8(HEADER, PACKET_TYPE_RTK);
         if (data) {
             parse_data_rtk(&(data[3]), &(*result));
-            memset(result, 0, sizeof(result));
-            free(data);
+            memset(result, 0, sizeof(result));    
         }
+        free(data);
     }
     free(result);
     return 0;
