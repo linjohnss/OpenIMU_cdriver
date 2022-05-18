@@ -4,7 +4,7 @@ OpenIMU, OpenRTK driver by C.
 ## Devices
 * [OpenIMU 383ZA](https://buildmedia.readthedocs.org/media/pdf/openimu/latest/openimu.pdf)
 * [OpenIMU 330BI](https://buildmedia.readthedocs.org/media/pdf/openimu/latest/openimu.pdf)
-* OpenRTK 330LI
+* [OpenRTK 330LI](https://openrtk.readthedocs.io/en/latest/index.html)
 ## Get Start
 ### Environment
 `Ubuntu 20.04`
