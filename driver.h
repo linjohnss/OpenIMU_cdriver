@@ -13,6 +13,9 @@
 #define PACKET_TYPE_383 0x53    // s1:5331
 #define PACKET_TYPE_330 0x7A    // z1:7A31
 #define PACKET_TYPE_RTK 0x73    // s1:7331
+#define PACKET_TYPE_RTK_INS 0x69
+#define PACKET_TYPE_RTK_GNSS 0x67
+
 #define PI 3.1415926
 
 static uint64_t time_count = 0;
@@ -47,6 +50,54 @@ struct rtkData {
     float gyroz;
 };
 
+typedef struct rtkGnssData *rtkGnssDataPointer;
+struct rtkGnssData {
+    uint16_t    gps_week;
+    uint32_t    gps_millisecs;
+    uint8_t     position_type;
+    double      latitude;
+    double      longitude;
+    double      height;
+    float       latitude_std_deviation;
+    float       longitude_std_deviation;
+    float       height_std_deviation;
+    uint8_t     num_of_satellites;
+    uint8_t     num_satellite_in_solution;
+    float       hdop;
+    float       diffage;
+    float       north_vel;
+    float       east_vel;
+    float       up_vel;
+    float       north_vel_std_deviation;    
+    float       east_vel_std_deviation;   
+    float       up_vel_std_deviation;
+};
+typedef struct rtkInsData *rtkInsDataPointer;
+struct rtkInsData {
+    uint16_t    gps_week;
+    uint32_t    gps_millisecs;
+    uint8_t     ins_status;
+    uint8_t     ins_position_type;
+    double      latitude;
+    double      longitude;
+    double      height;
+    double      north_vel;
+    double      east_vel;
+    double      up_vel;
+    double      roll;
+    double      pitch;
+    double      heading;
+    float       latitude_std_deviation;
+    float       longitude_std_deviation;
+    float       height_std_deviation;
+    float       north_vel_std_deviation;    
+    float       east_vel_std_deviation;  
+    float       up_vel_std_deviation;     
+    float       roll_std_deviation; 
+    float       pitch_std_deviation;   
+    float       heading_std_deviation;
+};
+
 int16_t reverse(int16_t x)
 {
     x = (((x & 0xff00) >> 8) | ((x & 0x00ff) << 8));
@@ -61,6 +112,11 @@ int16_t concat_16(int8_t a, int8_t b)
 int32_t concat_32(int8_t a, int8_t b, int8_t c, int8_t d)
 {
     return concat_16(a, b) << 16 | (concat_16(c, d) & 0x0000ffff);
+}
+
+int64_t concat_64(int8_t a1, int8_t b1, int8_t c1, int8_t d1, int8_t a2, int8_t b2, int8_t c2, int8_t d2)
+{
+    return (int64_t)concat_32(a1, b1, c1, d1) << 32 | ((int64_t)concat_32(a2, b2, c2, d2) & 0x00000000ffffffff);
 }
 
 uint16_t CalculateCRC(uint8_t *buf, uint16_t length)
@@ -175,9 +231,116 @@ void parse_data_rtk(int8_t *data, rtkDataPointer result)
     return;
 }
 
+void parse_data_rtk_gnss(int8_t *data, rtkGnssDataPointer result)
+{
+    void *temp;
+    *((int16_t *) (&temp)) = concat_16(data[1], data[0]);
+    result->gps_week = *((uint16_t *) (&temp));
+    *((int32_t *) (&temp)) = concat_32(data[5], data[4], data[3], data[2]);
+    result->gps_millisecs = *((uint32_t *) (&temp));
+    result->position_type = data[6];
+    *((int64_t *) (&temp)) = concat_64(data[14], data[13], data[12], data[11], data[10], data[9], data[8], data[7]);
+    result->latitude = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[22], data[21], data[20], data[19], data[18], data[17], data[16], data[15]);
+    result->longitude = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[30], data[29], data[28], data[27], data[26], data[25], data[24], data[23]);
+    result->height = (*((double *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[34], data[33], data[32], data[31]);
+    result->latitude_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[38], data[37], data[36], data[35]);
+    result->longitude_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[42], data[41], data[40], data[39]);
+    result->height_std_deviation = (*((float *) (&temp)));
+    result->num_of_satellites = data[43];
+    result->num_satellite_in_solution = data[44];
+    *((int32_t *) (&temp)) = concat_32(data[48], data[47], data[46], data[45]);
+    result->hdop = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[52], data[51], data[50], data[49]);
+    result->diffage = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[56], data[55], data[54], data[53]);
+    result->north_vel = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[60], data[59], data[58], data[57]);
+    result->east_vel = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[64], data[63], data[62], data[61]);
+    result->up_vel = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[68], data[67], data[66], data[65]);
+    result->north_vel_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[72], data[71], data[70], data[69]);
+    result->east_vel_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[76], data[75], data[74], data[73]);
+    result->up_vel_std_deviation = (*((float *) (&temp)));
+
+    printf("%.9lf,", result->latitude);
+    printf("%.9lf,", result->longitude);
+    printf("%.4lf,", result->height);
+    printf("%.4lf,", result->latitude_std_deviation);
+    printf("%.4lf,", result->longitude_std_deviation);
+    printf("%.4lf,", result->height_std_deviation);
+    printf("%d,", result->gps_week);
+    printf("%.3f", result->gps_millisecs/1000.0);
+    printf("\n");
+    return;
+}
+
+void parse_data_rtk_ins(int8_t *data, rtkInsDataPointer result)
+{
+    void *temp;
+    *((int16_t *) (&temp)) = concat_16(data[1], data[0]);
+    result->gps_week = *((uint16_t *) (&temp));
+    *((int32_t *) (&temp)) = concat_32(data[5], data[4], data[3], data[2]);
+    result->gps_millisecs = *((uint32_t *) (&temp));
+    result->ins_status = data[6];
+    result->ins_position_type = data[7];
+    *((int64_t *) (&temp)) = concat_64(data[15], data[14], data[13], data[12], data[11], data[10], data[9], data[8]);
+    result->latitude = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[23], data[22], data[21], data[20], data[19], data[18], data[17], data[16]);
+    result->longitude = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[31], data[30], data[29], data[28], data[27], data[26], data[25], data[24]);
+    result->height = (*((double *) (&temp)));
+     *((int64_t *) (&temp)) = concat_64(data[39], data[38], data[37], data[36], data[35], data[34], data[33], data[32]);
+    result->north_vel = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[47], data[46], data[45], data[44], data[43], data[42], data[41], data[40]);
+    result->east_vel = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[55], data[54], data[53], data[52], data[51], data[50], data[49], data[48]);
+    result->roll = (*((double *) (&temp)));
+      *((int64_t *) (&temp)) = concat_64(data[63], data[62], data[61], data[60], data[59], data[58], data[57], data[56]);
+    result->pitch = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[71], data[70], data[69], data[68], data[67], data[66], data[65], data[64]);
+    result->heading = (*((double *) (&temp)));
+    *((int64_t *) (&temp)) = concat_64(data[79], data[78], data[77], data[76], data[75], data[74], data[73], data[72]);
+    result->up_vel = (*((double *) (&temp)));
+
+    *((int32_t *) (&temp)) = concat_32(data[83], data[82], data[81], data[80]);
+    result->latitude_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[87], data[86], data[85], data[84]);
+    result->longitude_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[91], data[90], data[89], data[88]);
+    result->height_std_deviation = (*((float *) (&temp)));
+     *((int32_t *) (&temp)) = concat_32(data[95], data[94], data[93], data[92]);
+    result->north_vel_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[99], data[98], data[97], data[96]);
+    result->east_vel_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[103], data[102], data[101], data[100]);
+    result->roll_std_deviation = (*((float *) (&temp)));
+      *((int32_t *) (&temp)) = concat_32(data[107], data[106], data[105], data[104]);
+    result->pitch_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[111], data[110], data[109], data[108]);
+    result->heading_std_deviation = (*((float *) (&temp)));
+    *((int32_t *) (&temp)) = concat_32(data[115], data[114], data[113], data[112]);
+    result->up_vel_std_deviation = (*((float *) (&temp)));
+
+    printf("%14.9lf,", result->latitude);
+    printf("%14.9lf,", result->longitude);
+    printf("%10.4lf,", result->height);
+    printf("%d,", result->gps_week);
+    printf("%.3f", result->gps_millisecs/1000.0);
+    printf("\n");
+    return;
+}
+
 int8_t *launch_driver_8(int serial_port, int8_t header, int8_t packet_type)
 {
-    int8_t *buffer = (int8_t *) malloc((50) * sizeof(int8_t));
+    int8_t *buffer = (int8_t *) malloc((255) * sizeof(int8_t));
     if ((read(serial_port, &buffer[0], sizeof(int8_t))) > 0) {
         if (buffer[0] == header) {
             if (read(serial_port, &buffer[0], sizeof(int8_t)) > 0) {
@@ -210,8 +373,9 @@ int8_t *launch_driver_8(int serial_port, int8_t header, int8_t packet_type)
                     }
                 }
             }
-        }
+        } 
     }
+    free(buffer);
     return NULL;
 }
 
